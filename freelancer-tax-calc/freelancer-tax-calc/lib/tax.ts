@@ -8,6 +8,8 @@ export interface TaxInput {
   expenseType: ExpenseType;
   expenseRate: number; // 경비율 (%), 업종코드별로 사용자가 입력
   dependents: number; // 인적공제 대상 인원 (본인 포함)
+  pensionPremium: number; // 연간 국민연금보험료 납부액 (연금보험료공제, 전액 소득공제)
+  childCount: number; // 8세 이상 기본공제대상 자녀 수 (자녀세액공제용)
   prepaidTax: number; // 기납부세액 (3.3% 원천징수 합계 등)
 }
 
@@ -15,12 +17,16 @@ export interface TaxResult {
   recognizedExpense: number;
   incomeAmount: number; // 종합소득금액
   personalDeduction: number; // 인적공제
+  pensionDeduction: number; // 연금보험료공제
   taxBase: number; // 과세표준
   bracketRate: number;
   progressiveDeduction: number;
   calculatedTax: number; // 산출세액
+  standardTaxCredit: number; // 표준세액공제
+  childTaxCredit: number; // 자녀세액공제
+  taxAfterCredit: number; // 세액공제 반영 후 결정세액(지방세 전)
   localTax: number; // 지방소득세 (10%)
-  totalTax: number; // 산출세액 + 지방소득세
+  totalTax: number; // 결정세액 + 지방소득세
   balance: number; // 최종 정산액 (양수: 추가납부, 음수: 환급)
 }
 
@@ -37,6 +43,15 @@ const BRACKETS = [
 ];
 
 const PERSONAL_DEDUCTION_PER_PERSON = 1_500_000; // 1인당 기본공제
+const STANDARD_TAX_CREDIT = 70_000; // 표준세액공제 (특별소득·세액공제 미신청 시)
+
+function calcChildTaxCredit(childCount: number): number {
+  const n = Math.max(0, Math.floor(childCount));
+  if (n <= 0) return 0;
+  if (n === 1) return 150_000;
+  if (n === 2) return 350_000;
+  return 350_000 + (n - 2) * 300_000;
+}
 
 export function findBracket(taxBase: number) {
   return BRACKETS.find((b) => taxBase <= b.limit) ?? BRACKETS[BRACKETS.length - 1];
@@ -46,22 +61,32 @@ export function calculateTax(input: TaxInput): TaxResult {
   const recognizedExpense = Math.round(input.revenue * (input.expenseRate / 100));
   const incomeAmount = Math.max(0, input.revenue - recognizedExpense);
   const personalDeduction = Math.max(0, input.dependents) * PERSONAL_DEDUCTION_PER_PERSON;
-  const taxBase = Math.max(0, incomeAmount - personalDeduction);
+  const pensionDeduction = Math.max(0, input.pensionPremium); // 국민연금보험료는 전액 소득공제
+  const taxBase = Math.max(0, incomeAmount - personalDeduction - pensionDeduction);
 
   const bracket = findBracket(taxBase);
   const calculatedTax = Math.max(0, Math.round(taxBase * bracket.rate - bracket.deduction));
-  const localTax = Math.round(calculatedTax * 0.1);
-  const totalTax = calculatedTax + localTax;
+
+  const childTaxCredit = calcChildTaxCredit(input.childCount);
+  const standardTaxCredit = STANDARD_TAX_CREDIT;
+  const taxAfterCredit = Math.max(0, calculatedTax - standardTaxCredit - childTaxCredit);
+
+  const localTax = Math.round(taxAfterCredit * 0.1);
+  const totalTax = taxAfterCredit + localTax;
   const balance = totalTax - input.prepaidTax;
 
   return {
     recognizedExpense,
     incomeAmount,
     personalDeduction,
+    pensionDeduction,
     taxBase,
     bracketRate: bracket.rate,
     progressiveDeduction: bracket.deduction,
     calculatedTax,
+    standardTaxCredit,
+    childTaxCredit,
+    taxAfterCredit,
     localTax,
     totalTax,
     balance,
