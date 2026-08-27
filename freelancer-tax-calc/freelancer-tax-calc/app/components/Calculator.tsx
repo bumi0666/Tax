@@ -49,6 +49,8 @@ export default function Calculator() {
   const [expenseType, setExpenseType] = useState<ExpenseType>("simple");
   const [customRate, setCustomRate] = useState(64.1);
   const [dependents, setDependents] = useState(1);
+  const [pensionPremium, setPensionPremium] = useState(0);
+  const [childCount, setChildCount] = useState(0);
   const [prepaidTax, setPrepaidTax] = useState(990_000);
 
   const preset = EXPENSE_PRESETS.find((p) => p.code === presetCode)!;
@@ -62,9 +64,11 @@ export default function Calculator() {
         expenseType,
         expenseRate,
         dependents,
+        pensionPremium,
+        childCount,
         prepaidTax,
       }),
-    [revenue, expenseType, expenseRate, dependents, prepaidTax]
+    [revenue, expenseType, expenseRate, dependents, pensionPremium, childCount, prepaidTax]
   );
 
   const isRefund = result.balance < 0;
@@ -139,7 +143,26 @@ export default function Calculator() {
         />
 
         <NumberField
-          label="④ 기납부세액(3.3%)"
+          label="④ 국민연금보험료(연납)"
+          value={pensionPremium}
+          onChange={setPensionPremium}
+        />
+        <p className="text-[11.5px] text-[var(--ink-soft)] -mt-1 mb-1 pl-0.5">
+          지역가입자 국민연금 납부액(전액 소득공제). 건강보험료는 경비율에 이미 반영돼 있어 별도 입력하지 않습니다.
+        </p>
+
+        <NumberField
+          label="⑤ 8세 이상 자녀 수"
+          value={childCount}
+          onChange={setChildCount}
+          suffix="명"
+        />
+        <p className="text-[11.5px] text-[var(--ink-soft)] -mt-1 mb-1 pl-0.5">
+          자녀세액공제용. 표준세액공제 7만원은 자동 적용됩니다.
+        </p>
+
+        <NumberField
+          label="⑥ 기납부세액(3.3%)"
           value={prepaidTax}
           onChange={setPrepaidTax}
         />
@@ -167,12 +190,17 @@ export default function Calculator() {
           <Row label="인정 필요경비" value={result.recognizedExpense} minus />
           <Row label="종합소득금액" value={result.incomeAmount} strong />
           <Row label="인적공제" value={result.personalDeduction} minus />
+          <Row label="연금보험료공제" value={result.pensionDeduction} minus />
           <Row label="과세표준" value={result.taxBase} strong />
 
           <div className="border-t border-dashed border-[var(--ink-soft)]/50 my-3" />
 
           <Row label={`적용세율 ${(result.bracketRate * 100).toFixed(0)}%`} value={null} />
           <Row label="산출세액" value={result.calculatedTax} />
+          <Row label="표준세액공제" value={result.standardTaxCredit} minus />
+          {result.childTaxCredit > 0 && (
+            <Row label="자녀세액공제" value={result.childTaxCredit} minus />
+          )}
           <Row label="지방소득세(10%)" value={result.localTax} />
           <Row label="결정세액 합계" value={result.totalTax} strong />
           <Row label="기납부세액" value={prepaidTax} minus />
