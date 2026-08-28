@@ -6,6 +6,14 @@ export default function Home() {
     <main className="flex-1 bg-[var(--paper)]">
       <div className="max-w-5xl mx-auto px-6 pt-14 pb-24">
         <header className="mb-12">
+          <nav className="flex gap-5 mb-6 font-mono text-xs text-[var(--ink-soft)]">
+            <Link href="/about" className="hover:text-[var(--stamp)] hover:underline">
+              소개
+            </Link>
+            <Link href="/guide" className="hover:text-[var(--stamp)] hover:underline">
+              가이드
+            </Link>
+          </nav>
           <div className="font-mono text-xs tracking-[0.2em] text-[var(--stamp)] mb-3">
             3.3% 원천징수 사업소득자 전용
           </div>
