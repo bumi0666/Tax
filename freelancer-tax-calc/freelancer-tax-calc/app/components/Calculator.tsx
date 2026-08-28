@@ -53,11 +53,15 @@ export default function Calculator() {
   const [dependents, setDependents] = useState(1);
   const [pensionPremium, setPensionPremium] = useState(0);
   const [childCount, setChildCount] = useState(0);
-  const [prepaidTax, setPrepaidTax] = useState(990_000);
+  const [prepaidKnown, setPrepaidKnown] = useState(false);
+  const [prepaidTaxInput, setPrepaidTaxInput] = useState(990_000);
 
   const preset = EXPENSE_PRESETS.find((p) => p.code === presetCode)!;
   const expenseRate =
     presetCode === "custom" ? customRate : expenseType === "simple" ? preset.simple : preset.standard;
+
+  const estimatedPrepaid = Math.round(revenue * 0.033);
+  const prepaidTax = prepaidKnown ? prepaidTaxInput : estimatedPrepaid;
 
   const result = useMemo(
     () =>
@@ -137,6 +141,14 @@ export default function Calculator() {
           </div>
         )}
 
+        {presetCode !== "custom" && expenseType === "standard" && (
+          <p className="text-[11.5px] text-[var(--stamp)] -mt-1 mb-1 pl-0.5">
+            매입비용·임차료·인건비 같은 &ldquo;주요경비&rdquo;가 없다고 가정한 계산입니다.
+            직원을 고용하거나 사무실을 임차하는 등 주요경비가 있다면 실제 세액과 차이가
+            클 수 있어요.
+          </p>
+        )}
+
         <NumberField
           label="③ 인적공제 인원"
           value={dependents}
@@ -163,11 +175,40 @@ export default function Calculator() {
           자녀세액공제용. 표준세액공제 7만원은 자동 적용됩니다.
         </p>
 
-        <NumberField
-          label="⑥ 기납부세액(3.3%)"
-          value={prepaidTax}
-          onChange={setPrepaidTax}
-        />
+        <div className="py-2">
+          <div className="font-display text-[15px] mb-2">⑥ 기납부세액(3.3% 원천징수)</div>
+          <div className="flex gap-6 mb-2">
+            <label className="flex items-center gap-2 font-mono text-[13px] cursor-pointer">
+              <input
+                type="radio"
+                checked={!prepaidKnown}
+                onChange={() => setPrepaidKnown(false)}
+                className="accent-[var(--stamp)]"
+              />
+              모르겠어요 — 3.3%로 추정
+            </label>
+            <label className="flex items-center gap-2 font-mono text-[13px] cursor-pointer">
+              <input
+                type="radio"
+                checked={prepaidKnown}
+                onChange={() => setPrepaidKnown(true)}
+                className="accent-[var(--stamp)]"
+              />
+              직접 입력할게요
+            </label>
+          </div>
+          {prepaidKnown ? (
+            <NumberField label="" value={prepaidTaxInput} onChange={setPrepaidTaxInput} />
+          ) : (
+            <div className="font-mono text-right text-[15px] py-1 text-[var(--ink-soft)]">
+              {formatWon(estimatedPrepaid)}원 (자동 추정)
+            </div>
+          )}
+        </div>
+        <p className="text-[11.5px] text-[var(--ink-soft)] -mt-1 mb-1 pl-0.5">
+          실제 원천징수액은 지급명세서 합계와 다를 수 있으니, 정확히 알고 있다면 직접
+          입력을 선택하세요.
+        </p>
 
         <p className="mt-6 text-[12px] leading-relaxed text-[var(--ink-soft)] border-t border-[var(--rule)] pt-4">
           경비율·기준수입금액 요건은 홈택스 &ldquo;기준·단순경비율 조회&rdquo;에서 본인 업종코드로 반드시 재확인하세요.
