@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Calculator from "./components/Calculator";
 
 export default function Home() {
@@ -22,9 +23,19 @@ export default function Home() {
         <Calculator />
 
         <footer className="mt-16 pt-6 border-t border-[var(--rule)] text-[12px] text-[var(--ink-soft)] leading-relaxed">
-          2026년 5월 신고(2025년 귀속) 세율표 기준 추정 계산입니다. 실제 세액은 소득공제·세액공제
-          항목, 복식부기 의무 여부 등에 따라 달라질 수 있으니 최종 신고 전 홈택스 모의계산 또는
-          세무 전문가 확인을 권장합니다.
+          <p>
+            2026년 5월 신고(2025년 귀속) 세율표 기준 추정 계산입니다. 실제 세액은 소득공제·세액공제
+            항목, 복식부기 의무 여부 등에 따라 달라질 수 있으니 최종 신고 전 홈택스 모의계산 또는
+            세무 전문가 확인을 권장합니다.
+          </p>
+          <div className="mt-4 flex gap-4 font-mono text-[11px]">
+            <Link href="/terms" className="hover:text-[var(--stamp)] hover:underline">
+              이용약관
+            </Link>
+            <Link href="/privacy" className="hover:text-[var(--stamp)] hover:underline">
+              개인정보처리방침
+            </Link>
+          </div>
         </footer>
       </div>
     </main>
