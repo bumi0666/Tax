@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { toPng } from "html-to-image";
 import { calculateTax, formatWon, ExpenseType } from "@/lib/tax";
 
 const EXPENSE_PRESETS: { code: string; label: string; simple: number; standard: number }[] = [
@@ -10,6 +11,18 @@ const EXPENSE_PRESETS: { code: string; label: string; simple: number; standard: 
   { code: "940306", label: "1인미디어 콘텐츠 창작자", simple: 64.1, standard: 12.1 },
   { code: "custom", label: "직접 입력", simple: 0, standard: 0 },
 ];
+
+export interface CalculatorInitialState {
+  revenue?: number;
+  presetCode?: string;
+  expenseType?: ExpenseType;
+  customRate?: number;
+  dependents?: number;
+  pensionPremium?: number;
+  childCount?: number;
+  prepaidKnown?: boolean;
+  prepaidTaxInput?: number;
+}
 
 function NumberField({
   label,
@@ -45,16 +58,18 @@ function NumberField({
   );
 }
 
-export default function Calculator({ initialRevenue }: { initialRevenue?: number }) {
-  const [revenue, setRevenue] = useState(initialRevenue ?? 30_000_000);
-  const [presetCode, setPresetCode] = useState("940909");
-  const [expenseType, setExpenseType] = useState<ExpenseType>("simple");
-  const [customRate, setCustomRate] = useState(64.1);
-  const [dependents, setDependents] = useState(1);
-  const [pensionPremium, setPensionPremium] = useState(0);
-  const [childCount, setChildCount] = useState(0);
-  const [prepaidKnown, setPrepaidKnown] = useState(false);
-  const [prepaidTaxInput, setPrepaidTaxInput] = useState(990_000);
+export default function Calculator({ initial }: { initial?: CalculatorInitialState }) {
+  const [revenue, setRevenue] = useState(initial?.revenue ?? 30_000_000);
+  const [presetCode, setPresetCode] = useState(initial?.presetCode ?? "940909");
+  const [expenseType, setExpenseType] = useState<ExpenseType>(initial?.expenseType ?? "simple");
+  const [customRate, setCustomRate] = useState(initial?.customRate ?? 64.1);
+  const [dependents, setDependents] = useState(initial?.dependents ?? 1);
+  const [pensionPremium, setPensionPremium] = useState(initial?.pensionPremium ?? 0);
+  const [childCount, setChildCount] = useState(initial?.childCount ?? 0);
+  const [prepaidKnown, setPrepaidKnown] = useState(initial?.prepaidKnown ?? false);
+  const [prepaidTaxInput, setPrepaidTaxInput] = useState(initial?.prepaidTaxInput ?? 990_000);
+  const [copyLabel, setCopyLabel] = useState("링크 복사");
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   const preset = EXPENSE_PRESETS.find((p) => p.code === presetCode)!;
   const expenseRate =
@@ -78,6 +93,48 @@ export default function Calculator({ initialRevenue }: { initialRevenue?: number
   );
 
   const isRefund = result.balance < 0;
+
+  function buildShareUrl() {
+    const params = new URLSearchParams({
+      revenue: String(revenue),
+      preset: presetCode,
+      type: expenseType,
+      customRate: String(customRate),
+      dependents: String(dependents),
+      pension: String(pensionPremium),
+      children: String(childCount),
+      prepaidKnown: prepaidKnown ? "1" : "0",
+      prepaid: String(prepaidTaxInput),
+    });
+    return `${window.location.origin}/?${params.toString()}`;
+  }
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(buildShareUrl());
+      setCopyLabel("복사됨!");
+      setTimeout(() => setCopyLabel("링크 복사"), 2000);
+    } catch {
+      setCopyLabel("복사 실패");
+      setTimeout(() => setCopyLabel("링크 복사"), 2000);
+    }
+  }
+
+  async function handleSaveImage() {
+    if (!receiptRef.current) return;
+    try {
+      const dataUrl = await toPng(receiptRef.current, {
+        pixelRatio: 2,
+        backgroundColor: "#F1EFE8",
+      });
+      const link = document.createElement("a");
+      link.download = "mytax33-정산표.png";
+      link.href = dataUrl;
+      link.click();
+    } catch {
+      // 이미지 생성 실패 시 조용히 무시 (브라우저 호환성 이슈 등)
+    }
+  }
 
   return (
     <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
@@ -219,7 +276,7 @@ export default function Calculator({ initialRevenue }: { initialRevenue?: number
       {/* 오른쪽: 영수증 출력 */}
       <section className="relative">
         <div className="h-2 receipt-edge bg-[var(--receipt)]" />
-        <div className="bg-[var(--receipt)] px-7 py-8 shadow-lg animate-print">
+        <div ref={receiptRef} className="bg-[var(--receipt)] px-7 py-8 shadow-lg animate-print">
           <div className="text-center font-display font-bold text-lg tracking-wide mb-1">
             종 합 소 득 세 정 산 표
           </div>
@@ -270,8 +327,27 @@ export default function Calculator({ initialRevenue }: { initialRevenue?: number
               계산
             </div>
           </div>
+
+          <div className="mt-6 text-center font-mono text-[10px] tracking-[0.15em] text-[var(--ink-soft)]">
+            mytax33.com
+          </div>
         </div>
         <div className="h-2 receipt-edge-bottom bg-[var(--receipt)]" />
+
+        <div className="flex gap-3 mt-4">
+          <button
+            onClick={handleCopyLink}
+            className="flex-1 font-mono text-[12px] border border-[var(--ink-soft)]/40 rounded-sm py-2.5 hover:border-[var(--stamp)] hover:text-[var(--stamp)] transition-colors"
+          >
+            {copyLabel}
+          </button>
+          <button
+            onClick={handleSaveImage}
+            className="flex-1 font-mono text-[12px] border border-[var(--ink-soft)]/40 rounded-sm py-2.5 hover:border-[var(--stamp)] hover:text-[var(--stamp)] transition-colors"
+          >
+            이미지로 저장
+          </button>
+        </div>
       </section>
     </div>
   );

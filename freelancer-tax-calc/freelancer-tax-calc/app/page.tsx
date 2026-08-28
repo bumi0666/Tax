@@ -1,12 +1,33 @@
 import Link from "next/link";
-import Calculator from "./components/Calculator";
+import Calculator, { CalculatorInitialState } from "./components/Calculator";
+import { ExpenseType } from "@/lib/tax";
+
+function getParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const v = params[key];
+  return Array.isArray(v) ? v[0] : v;
+}
+
+function parseNum(v: string | undefined): number | undefined {
+  if (!v) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
-  const revenueParam = Array.isArray(params.revenue) ? params.revenue[0] : params.revenue;
-  const parsedRevenue = revenueParam ? parseInt(revenueParam, 10) : undefined;
-  const initialRevenue =
-    parsedRevenue && Number.isFinite(parsedRevenue) && parsedRevenue > 0 ? parsedRevenue : undefined;
+
+  const initial: CalculatorInitialState = {
+    revenue: parseNum(getParam(params, "revenue")),
+    presetCode: getParam(params, "preset"),
+    expenseType:
+      getParam(params, "type") === "standard" ? ("standard" as ExpenseType) : getParam(params, "type") === "simple" ? ("simple" as ExpenseType) : undefined,
+    customRate: parseNum(getParam(params, "customRate")),
+    dependents: parseNum(getParam(params, "dependents")),
+    pensionPremium: parseNum(getParam(params, "pension")),
+    childCount: parseNum(getParam(params, "children")),
+    prepaidKnown: getParam(params, "prepaidKnown") === "1" ? true : getParam(params, "prepaidKnown") === "0" ? false : undefined,
+    prepaidTaxInput: parseNum(getParam(params, "prepaid")),
+  };
 
   return (
     <main className="flex-1 bg-[var(--paper)]">
@@ -34,7 +55,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </p>
         </header>
 
-        <Calculator initialRevenue={initialRevenue} />
+        <Calculator initial={initial} />
 
         <footer className="mt-16 pt-6 border-t border-[var(--rule)] text-[12px] text-[var(--ink-soft)] leading-relaxed">
           <p>
