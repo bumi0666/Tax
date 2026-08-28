@@ -1,7 +1,13 @@
 import Link from "next/link";
 import Calculator from "./components/Calculator";
 
-export default function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const params = await searchParams;
+  const revenueParam = Array.isArray(params.revenue) ? params.revenue[0] : params.revenue;
+  const parsedRevenue = revenueParam ? parseInt(revenueParam, 10) : undefined;
+  const initialRevenue =
+    parsedRevenue && Number.isFinite(parsedRevenue) && parsedRevenue > 0 ? parsedRevenue : undefined;
+
   return (
     <main className="flex-1 bg-[var(--paper)]">
       <div className="max-w-5xl mx-auto px-6 pt-14 pb-24">
@@ -28,7 +34,7 @@ export default function Home() {
           </p>
         </header>
 
-        <Calculator />
+        <Calculator initialRevenue={initialRevenue} />
 
         <footer className="mt-16 pt-6 border-t border-[var(--rule)] text-[12px] text-[var(--ink-soft)] leading-relaxed">
           <p>

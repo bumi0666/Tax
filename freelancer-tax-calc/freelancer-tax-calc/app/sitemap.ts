@@ -5,6 +5,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const guides = [
     "withholding-33",
     "expense-rate",
+    "freelancer-tax-20m",
+    "freelancer-tax-30m",
     "filing-steps",
     "tax-saving-tips",
   ];

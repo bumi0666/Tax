@@ -45,8 +45,8 @@ function NumberField({
   );
 }
 
-export default function Calculator() {
-  const [revenue, setRevenue] = useState(30_000_000);
+export default function Calculator({ initialRevenue }: { initialRevenue?: number }) {
+  const [revenue, setRevenue] = useState(initialRevenue ?? 30_000_000);
   const [presetCode, setPresetCode] = useState("940909");
   const [expenseType, setExpenseType] = useState<ExpenseType>("simple");
   const [customRate, setCustomRate] = useState(64.1);
