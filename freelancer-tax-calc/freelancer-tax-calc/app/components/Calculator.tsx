@@ -6,6 +6,8 @@ import { calculateTax, formatWon, ExpenseType } from "@/lib/tax";
 const EXPENSE_PRESETS: { code: string; label: string; simple: number; standard: number }[] = [
   { code: "940909", label: "일반 프리랜서 (기타자영업)", simple: 64.1, standard: 17.4 },
   { code: "940926", label: "소프트웨어 프리랜서", simple: 64.4, standard: 20.9 },
+  { code: "940903", label: "학원강사·강사·과외교습자", simple: 61.7, standard: 15.4 },
+  { code: "940306", label: "1인미디어 콘텐츠 창작자", simple: 64.1, standard: 12.1 },
   { code: "custom", label: "직접 입력", simple: 0, standard: 0 },
 ];
 
